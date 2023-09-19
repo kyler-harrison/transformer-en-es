@@ -1,0 +1,7 @@
+sentence pair dataset: https://www.kaggle.com/datasets/lonnieqin/englishspanish-translation-dataset?resource=download
+fasttext word2vec datasets: https://fasttext.cc/docs/en/crawl-vectors.html
+download files from links above (2 word2vec files, 1 data file of sentence pairs)
+
+run downloaded word2vec files through make_csv() in data_utils.py -> gives properly formatted word,vec csv file
+can now rm downloaded .vec files (.csv files used from here on) and .zip
+
