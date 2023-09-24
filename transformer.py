@@ -32,7 +32,7 @@ class Transformer(nn.Module):
         self.loss = None
 
 
-    def forward(self, og_inputs, decoder_inputs, encoder_context=None, encoder_only=False, decoder_only=False):
+    def forward(self, encoder_inputs, decoder_inputs, encoder_context=None, encoder_only=False, decoder_only=False):
         # based on conditionals, pass through all encoders and then all
         # decoders
 
@@ -45,7 +45,7 @@ class Transformer(nn.Module):
             return None
 
         elif (encoder_only):
-            encoder_context = og_inputs
+            encoder_context = encoder_inputs
 
             for encoder in self.encoders:
                 encoder_context = encoder.forward(encoder_context)
@@ -55,21 +55,21 @@ class Transformer(nn.Module):
         elif (decoder_only):
             # this is only called when doing inference, dont need to mask
             for decoder in self.decoders:
-                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, og_inputs, mask=False)
+                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, encoder_inputs, mask=False)
 
             linear_out = self.linear_layer(decoder_inputs)
 
             return linear_out
 
         else:
-            encoder_context = og_inputs
+            encoder_context = encoder_inputs
 
             for encoder in self.encoders:
                 encoder_context = encoder.forward(encoder_context)
 
             decoder_inputs = decoder_inputs
             for decoder in self.decoders:
-                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, og_inputs)
+                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, encoder_inputs)
 
             linear_out = self.linear_layer(decoder_inputs)
             
