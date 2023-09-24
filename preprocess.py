@@ -72,3 +72,39 @@ def embed_input_batch(batch_df, tokens_col, vec_df, vec_token_col, vec_embed_col
     """
 
     return torch.stack(batch_df[tokens_col].apply(lambda tokens: tokens_to_tensor(tokens, num_tokens, embedding_len, vec_df, vec_token_col, vec_embed_col)).values.tolist())
+
+
+def gen_positional_encoding(num_tokens, embedding_len):
+    """
+    Creates positional encoding matrix of shape (num_tokens, embedding_len)
+
+    num_tokens: max number of tokens in input sequence matrix
+    embedding_len: length of embedded token vector
+    example:
+    let sequence matrix be (num_tokens=4, embedding_len=3):
+    [[0.03, 0.02, 0.01],  -> pos=0, i=0,1,2
+     [0.04, 0.03, 0.02],  -> pos=1, i=0,1,2
+     [0.05, 0.04, 0.03],  -> pos=2, i=0,1,2
+     [0.06, 0.05, 0.04]]  -> pos=3, i=0,1,2
+    positonal encoding matrix (values not actually calculated):
+    [[1, 2, 3],
+     [5, 6, 7],
+     [4, 5, 6],
+     [7, 8, 9]
+    add em up elem-wise to get positionally-encoded matrix (not done in this fun):
+    [[1.03, 2.02, 3.01],
+     [5.04, 6.03, 7.02],
+      ...]
+    returns matrix of positional encoding values to be added to sequence matrices
+    """
+    pos_matrix = torch.zeros(num_words, embedding_len)
+    d_model = num_tokens * embeddingg_len
+
+    for pos in range(num_tokens):
+        for i in range(embedding_len):
+            if (i % 2 == 0):
+                pos_matrix[pos, i] = np.sin(pos / 10000**(2 * i / d_model))
+            else:
+                pos_matrix[pos, i] = np.cos(pos / 10000**(2 * i / d_model))
+
+    return pos_matrix
