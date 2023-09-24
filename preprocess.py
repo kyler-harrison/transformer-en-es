@@ -110,3 +110,19 @@ def gen_positional_encoding(num_tokens, embedding_len):
 
     return pos_matrix
 
+
+def pos_encode_batch(batch_data, sequence_lens, pos_encoding_mat):
+    """
+    Given batch of data, add positional encoding matrix to each sub-matrix
+    only where there is data (i.e. don't add to 0 rows).
+
+    batch_data: tensor batch of data with shape like (num_batches, num_tokens, embedding_len)
+    sequence_lens: number of tokens in each sequence in batch (NOTE must be same order as batch)
+    pos_encoding_mat: positional encoding matrix generated with other preprocess function
+
+    Operates on batch data inplace. Returns None.
+    """
+
+    for i, sequence_len in enumerate(sequence_lens):
+        batch_data[i][:sequence_len] += pos_encoding_mat[:sequence_len]
+
