@@ -126,3 +126,42 @@ def pos_encode_batch(batch_data, sequence_lens, pos_encoding_mat):
     for i, sequence_len in enumerate(sequence_lens):
         batch_data[i][:sequence_len] += pos_encoding_mat[:sequence_len]
 
+
+def one_hot_tokens(tokens, vec_df, num_tokens, output_size, vec_token_col):
+    """
+    Given list of tokens and other args defined in one_hot_batch, creates a matrix of one-hot
+    vectors.
+
+    Returns a tensor
+    """
+    out_tensor = torch.zeros(num_tokens, output_size)
+
+    # NOTE <s> token not included in output target (hence the [1:])
+    # <e> is included and nothing special needs to be done here
+    for i, token in enumerate(tokens[1:]):
+        # find token's index (vec_df is token->index mapping), should be guaranteed to be found
+        token_idx = vec_df[vec_df[vec_token_col] == token].index.values[0]
+
+        # set one-hot at token's index
+        out_tensor[i][token_idx] = 1.0
+
+    return out_tensor
+
+
+def one_hot_batch(batch_df, vec_df, num_tokens, output_size, tokens_col, vec_token_col):
+    """
+    Given a dataframe of a batch, returns a tensor batch where each sub-matrix contains rows of
+    one-hot token vectors.
+
+    batch_df: dataframe containing a column of tokens and a column of their respective lengths
+    vec_df: dataframe that maps tokens to vector representations, df index used as one-hot index
+    num_tokens: max number of tokens in an output prediction
+    output_size: size of single output vector (should be target vocab size, i.e. large)
+    tokens_col: name of column of tokens in batch_df
+    vec_token_col: name of token column in vec_token_col
+
+    Returns tensor of matrices containing one-hot vectors.
+    """
+    return torch.stack(batch_df[tokens_col].apply(lambda tokens: one_hot_tokens(tokens, vec_df, num_tokens, output_size, vec_token_col)).values.tolist())
+    
+
