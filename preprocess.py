@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 
 def sentence_to_tokens(sent, language):
@@ -97,8 +98,8 @@ def gen_positional_encoding(num_tokens, embedding_len):
       ...]
     returns matrix of positional encoding values to be added to sequence matrices
     """
-    pos_matrix = torch.zeros(num_words, embedding_len)
-    d_model = num_tokens * embeddingg_len
+    pos_matrix = torch.zeros(num_tokens, embedding_len)
+    d_model = num_tokens * embedding_len
 
     for pos in range(num_tokens):
         for i in range(embedding_len):
@@ -108,3 +109,4 @@ def gen_positional_encoding(num_tokens, embedding_len):
                 pos_matrix[pos, i] = np.cos(pos / 10000**(2 * i / d_model))
 
     return pos_matrix
+
