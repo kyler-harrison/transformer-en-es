@@ -31,7 +31,14 @@ class Decoder(nn.Module):
         self.layer_norm2 = nn.LayerNorm(decoder_input_size)
 
 
-    def forward(self, decoder_inputs, encoder_context, og_inputs, mask=True):
+    def forward(self, decoder_inputs, encoder_context, mask=True, p_dropout=0.1):
+        # p>0 for training, p=0 for inference
+        # this layer could be init w the nn if i did this in the nice torch way
+        dropout = nn.Dropout(p=p_dropout)
+
+        # decoder_inputs are embedding + positional encoding
+        decoder_inputs = dropout(decoder_inputs)
+
         # masked multi-head attention start
         # Q, K, V linear layer decoder_inputs
         Q = self.Q_layer(decoder_inputs)
@@ -49,18 +56,20 @@ class Decoder(nn.Module):
         sdpa0 = torch.matmul(sdpa0, V)
 
         mmha_out = self.mmha_linear(sdpa0)
+        mmha_out = dropout(mmha_out)
         # masked multi-head attention end
 
         # add & norm 0 
         mmha_anorm = self.layer_norm0(mmha_out + decoder_inputs)
 
         # multi-head attention start
-        # Q input: decoder's mmha_anorm, K: encoder_context, V: encoder_context 
+        # Q: decoder's mmha_anorm, K: encoder_context, V: encoder_context 
         Q2 = self.Q2_layer(mmha_anorm)
         K2 = self.K2_layer(encoder_context)
         V2 = self.V2_layer(encoder_context)
         sdpa1 = torch.bmm(torch.softmax(torch.bmm(Q2, torch.transpose(K2, 1, 2)) / np.sqrt(self.QKV_size), dim=2), V2)
         mha_out = self.mha_linear(sdpa1)
+        mha_out = dropout(mha_out)
         # multi-head attention end
 
         # add & norm 1
@@ -70,6 +79,7 @@ class Decoder(nn.Module):
         ff_output = self.ff_linear0(mha_anorm)
         ff_output = self.ff_relu(ff_output)
         ff_output = self.ff_linear1(ff_output)
+        ff_output = dropout(ff_output)
 
         # add & norm 2
         decoder_output = self.layer_norm2(ff_output + mha_anorm)
