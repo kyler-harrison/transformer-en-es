@@ -29,6 +29,21 @@ def test(tfrmr, enc_inp, dec_inp, targets):
     tfrmr.backward()
 
 
+def steps(tfrmr, enc_inp, dec_inp, targets):
+    print(f"enc_inp:\n{enc_inp}")
+    print(f"dec_inp:\n{dec_inp}")
+    print(tfrmr)
+    outs = tfrmr.forward(enc_inp, dec_inp)
+    print(f"outs:\n{outs}")
+
+
+def add_start_end(inp, embedding_len):
+    for sub in inp:
+        sub[0] = torch.ones(embedding_len)
+        sub[4] = torch.tensor([0.1 for _ in range(embedding_len)])
+        sub[5:] = torch.zeros(2, embedding_len)
+
+
 def main():
     # params to change
     num_tokens = 7
@@ -36,15 +51,17 @@ def main():
     batch_size = 3
     target_vocab_size = 10
     choices = [0.0, 1.0]
-    create_rando = True
-    save = True
+    create_rando = False
+    save = False
 
     # load/create dummy data
     if create_rando:
         enc_inp = torch.tensor([[[random.choice(choices) for j in range(embedding_len)] for i in range(num_tokens)] for b in range(batch_size)])
+        add_start_end(enc_inp, embedding_len)
         dec_inp = torch.tensor([[[random.choice(choices) for j in range(embedding_len)] for i in range(num_tokens)] for b in range(batch_size)])
-
+        add_start_end(dec_inp, embedding_len)
         targets = torch.zeros(batch_size, num_tokens, target_vocab_size)
+
         for b in range(batch_size):
             target = F.one_hot(torch.arange(0, num_tokens), num_classes=target_vocab_size).double()
             targets[b][:num_tokens] = target
@@ -63,7 +80,8 @@ def main():
     tfrmr = Transformer(embedding_len, target_vocab_size, N_layers, n_heads)
 
     # tests
-    test(tfrmr, enc_inp, dec_inp, targets)
+    #test(tfrmr, enc_inp, dec_inp, targets)
+    steps(tfrmr, enc_inp, dec_inp, targets)
 
 
 if __name__ == "__main__":
