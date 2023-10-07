@@ -27,7 +27,7 @@ class Transformer(nn.Module):
         self.decoders = nn.ModuleList([Decoder(size, num_heads) for i in range(N_layers)])
         self.linear_layer = nn.Linear(size, final_out_size)
         
-        self.optimizer = optim.Adam(self.parameters(), lr=optimizer_lr)
+        self.optimizer = optim.Adam(self.parameters(), lr=optimizer_lr, betas=(0.9, 0.98), eps=1e-9)
         self.loss_criteria = nn.CrossEntropyLoss()
         self.loss = None
 
@@ -45,25 +45,25 @@ class Transformer(nn.Module):
             return None
 
         elif (encoder_only):
+            # called when doing inference (encoder context needs to be created once)
             encoder_context = encoder_inputs
-
             for encoder in self.encoders:
                 encoder_context = encoder.forward(encoder_context)
 
             return encoder_context
 
         elif (decoder_only):
-            # this is only called when doing inference, dont need to mask
+            # called when doing inference (encoder context already created)
             for decoder in self.decoders:
-                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, encoder_inputs, mask=False)
+                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, encoder_inputs, mask=True)
 
             linear_out = self.linear_layer(decoder_inputs)
 
             return linear_out
 
         else:
+            # called when training (need to pass through all encoders and decoders)
             encoder_context = encoder_inputs
-
             for encoder in self.encoders:
                 encoder_context = encoder.forward(encoder_context)
 
