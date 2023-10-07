@@ -127,14 +127,20 @@ def pos_encode_batch(batch_data, sequence_lens, pos_encoding_mat):
         batch_data[i][:sequence_len] += pos_encoding_mat[:sequence_len]
 
 
-def one_hot_tokens(tokens, vec_df, num_tokens, output_size, vec_token_col):
+def one_hot_tokens(tokens, vec_df, num_tokens, output_size, vec_token_col, smoothing=False, smoothing_epsilon=0.1):
     """
     Given list of tokens and other args defined in one_hot_batch, creates a matrix of one-hot
     vectors.
 
     Returns a tensor
     """
-    out_tensor = torch.zeros(num_tokens, output_size)
+
+    if (smoothing):
+        # not sure if these even makes a diff for 0s, since smoothed val is probs order of 1e-6 
+        smoothed_val = smoothing_epsilon / (output_size - 1)
+        out_tensor = torch.zeros(num_tokens, output_size, smoothed_val)
+    else:
+        out_tensor = torch.zeros(num_tokens, output_size)
 
     # NOTE <s> token not included in output target (hence the [1:])
     # <e> is included and nothing special needs to be done here
@@ -143,15 +149,19 @@ def one_hot_tokens(tokens, vec_df, num_tokens, output_size, vec_token_col):
         token_idx = vec_df[vec_df[vec_token_col] == token].index.values[0]
 
         # set one-hot at token's index
-        out_tensor[i][token_idx] = 1.0
+        if (smoothing):
+            out_tensor[i][token_idx] = 1.0 - smoothing_epsilon
+        else:
+            out_tensor[i][token_idx] = 1.0
 
     return out_tensor
 
 
-def one_hot_batch(batch_df, vec_df, num_tokens, output_size, tokens_col, vec_token_col):
+def one_hot_batch(batch_df, vec_df, num_tokens, output_size, tokens_col, vec_token_col, smoothing=False, smoothing_epsilon=0.1):
     """
     Given a dataframe of a batch, returns a tensor batch where each sub-matrix contains rows of
-    one-hot token vectors.
+    one-hot token vectors. See https://paperswithcode.com/method/label-smoothing for label
+    smoothing explanation.
 
     batch_df: dataframe containing a column of tokens and a column of their respective lengths
     vec_df: dataframe that maps tokens to vector representations, df index used as one-hot index
@@ -159,6 +169,8 @@ def one_hot_batch(batch_df, vec_df, num_tokens, output_size, tokens_col, vec_tok
     output_size: size of single output vector (should be target vocab size, i.e. large)
     tokens_col: name of column of tokens in batch_df
     vec_token_col: name of token column in vec_token_col
+    smoothing: bool to smooth labels or not
+    smoothing_epsilon: epsilon value to use in label smoothing 
 
     Returns tensor of matrices containing one-hot vectors.
     """
