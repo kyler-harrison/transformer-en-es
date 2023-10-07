@@ -48,14 +48,14 @@ class Transformer(nn.Module):
             # called when doing inference (encoder context needs to be created once)
             encoder_context = encoder_inputs
             for encoder in self.encoders:
-                encoder_context = encoder.forward(encoder_context)
+                encoder_context = encoder.forward(encoder_context, p_dropout=0)
 
             return encoder_context
 
         elif (decoder_only):
             # called when doing inference (encoder context already created)
             for decoder in self.decoders:
-                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, encoder_inputs, mask=True)
+                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, mask=True, p_dropout=0)
 
             linear_out = self.linear_layer(decoder_inputs)
 
@@ -65,11 +65,11 @@ class Transformer(nn.Module):
             # called when training (need to pass through all encoders and decoders)
             encoder_context = encoder_inputs
             for encoder in self.encoders:
-                encoder_context = encoder.forward(encoder_context)
+                encoder_context = encoder.forward(encoder_context, p_dropout=0.1)
 
             decoder_inputs = decoder_inputs
             for decoder in self.decoders:
-                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, encoder_inputs)
+                decoder_inputs = decoder.forward(decoder_inputs, encoder_context, mask=True, p_dropout=0.1)
 
             linear_out = self.linear_layer(decoder_inputs)
             
