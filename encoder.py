@@ -22,7 +22,14 @@ class Encoder(nn.Module):
         self.layer_norm1 = nn.LayerNorm(input_size)
 
 
-    def forward(self, inputs):
+    def forward(self, inputs, p_dropout=0.1):
+        # p>0 for training, p=0 for inference
+        # this layer could be init w the nn if i did this in the nice torch way
+        dropout = nn.Dropout(p=p_dropout)
+
+        # inputs are embedding + positional encoding
+        inputs = dropout(inputs)
+
         # multi-headed attention start
         # Q, K, V linear layer outputs (tensors)
         Q = self.Q_layer(inputs)
@@ -33,6 +40,7 @@ class Encoder(nn.Module):
         sdpa = torch.bmm(torch.softmax(torch.bmm(Q, torch.transpose(K, 1, 2)) / np.sqrt(self.QKV_size), dim=2), V)
 
         mha_out = self.mha_linear(sdpa)
+        mha_out = dropout(mha_out)
         # multi-headed attention end
 
         # add & norm (norm operates across row in batch tensor's sub-matrices)
@@ -42,6 +50,7 @@ class Encoder(nn.Module):
         ff_output = self.ff_linear0(mha_out_anorm)
         ff_output = self.ff_relu(ff_output)
         ff_output = self.ff_linear1(ff_output)
+        ff_output = dropout(ff_output)
 
         # add & norm
         encoder_output = self.layer_norm1(ff_output + mha_out_anorm)
