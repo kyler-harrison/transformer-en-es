@@ -40,9 +40,11 @@ class Decoder(nn.Module):
 
         # scaled dot-product attention
         sdpa0 = torch.bmm(Q, torch.transpose(K, 1, 2)) / np.sqrt(self.QKV_size)
+
         if mask:
             mask = -1e6 * torch.triu(torch.ones_like(sdpa0), diagonal=1)
             sdpa0 = torch.tril(sdpa0) + mask
+
         sdpa0 = torch.softmax(sdpa0, dim=2)
         sdpa0 = torch.matmul(sdpa0, V)
 
